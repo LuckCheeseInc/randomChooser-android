@@ -9,12 +9,14 @@ import android.widget.TextView;
 
 import java.util.List;
 
-public class ItemsListAdapter extends ArrayAdapter<Item> {
+public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClickListener {
 
     private LayoutInflater inflater;
+    private NewItemListener listener;
 
-    public ItemsListAdapter(Context context, List<Item> objects) {
+    public ItemsListAdapter(Context context, List<Item> objects, NewItemListener listener) {
         super(context, R.layout.item_random_chooser, objects);
+        this.listener = listener;
         inflater = LayoutInflater.from(context);
     }
 
@@ -73,7 +75,25 @@ public class ItemsListAdapter extends ArrayAdapter<Item> {
     private View getNewItemView(View convertView, ViewGroup parent) {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.new_item_random_chooser, parent, false);
+            convertView.findViewById(R.id.submit).setOnClickListener(this);
         }
         return convertView;
+    }
+
+    // ----- View.OnClickListener ---------------------------------------------
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.submit:
+                listener.onNewItemRequestedToBeCreated((View) view.getParent());
+                break;
+        }
+    }
+
+    // ----- Related classes --------------------------------------------------
+
+    public interface NewItemListener {
+        void onNewItemRequestedToBeCreated(View newItemView);
     }
 }

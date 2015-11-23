@@ -6,11 +6,18 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ListView;
 
-public class ItemsListFragment extends Fragment {
+public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewItemListener {
 
-    private static String ARG_ITEMS = "arg_items";
+    private ItemsListAdapter itemsListAdapter;
+    private Item.ItemsCollection items;
+
+    public static ItemsListFragment newFragment() {
+        ItemsListFragment frag = new ItemsListFragment();
+        return frag;
+    }
 
     @Nullable
     @Override
@@ -22,20 +29,31 @@ public class ItemsListFragment extends Fragment {
 
     private void populateView(View fragView) {
         ListView listView = (ListView) fragView.findViewById(R.id.listView);
-        listView.setAdapter(new ItemsListAdapter(getActivity(), getItems()));
+        itemsListAdapter = new ItemsListAdapter(getActivity(), getItems(), this);
+        listView.setAdapter(itemsListAdapter);
     }
 
     public Item.ItemsCollection getItems() {
-        Bundle b = getArguments();
-        return (Item.ItemsCollection) b.getSerializable(ARG_ITEMS);
+        if (items == null) {
+            items = Item.ItemsCollection.getSaved(getActivity());
+        }
+        return items;
     }
 
-    public void setItems(Item.ItemsCollection items) {
-        Bundle b = getArguments();
-        if (b == null) {
-            b = new Bundle();
+    // ----- ItemsListAdapter.NewItemListener ---------------------------------
+
+    @Override
+    public void onNewItemRequestedToBeCreated(View newItemView) {
+        Item.ItemsCollection items = getItems();
+
+        EditText editText = (EditText) newItemView.findViewById(R.id.newItemText);
+        try {
+            items.add(editText.getText().toString());
+            Item.ItemsCollection.save(getActivity(), items);
+
+            itemsListAdapter.notifyDataSetChanged();
+        } catch (Exception e) {
+            editText.setError(e.getMessage());
         }
-        b.putSerializable(ARG_ITEMS, items);
-        setArguments(b);
     }
 }
