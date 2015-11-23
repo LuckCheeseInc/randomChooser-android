@@ -1,11 +1,15 @@
 package com.luckcheese.randomchooser;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -31,6 +35,29 @@ public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewI
         ListView listView = (ListView) fragView.findViewById(R.id.listView);
         itemsListAdapter = new ItemsListAdapter(getActivity(), getItems(), this);
         listView.setAdapter(itemsListAdapter);
+
+        registerForContextMenu(listView);
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        getActivity().getMenuInflater().inflate(R.menu.item_options, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        int position = ((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position;
+
+        switch (item.getItemId()) {
+
+            case R.id.delete:
+                deleteItem(position);
+                return true;
+
+            default:
+                return super.onContextItemSelected(item);
+        }
     }
 
     public Item.ItemsCollection getItems() {
@@ -38,6 +65,17 @@ public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewI
             items = Item.ItemsCollection.getSaved(getActivity());
         }
         return items;
+    }
+
+    private void saveItemsAndUpdateView(Item.ItemsCollection items) {
+        Item.ItemsCollection.save(getActivity(), items);
+        itemsListAdapter.notifyDataSetChanged();
+    }
+
+    private void deleteItem(int position) {
+        Item.ItemsCollection items = getItems();
+        items.remove(position);
+        saveItemsAndUpdateView(items);
     }
 
     // ----- ItemsListAdapter.NewItemListener ---------------------------------
@@ -49,9 +87,7 @@ public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewI
         EditText editText = (EditText) newItemView.findViewById(R.id.newItemText);
         try {
             items.add(editText.getText().toString());
-            Item.ItemsCollection.save(getActivity(), items);
-
-            itemsListAdapter.notifyDataSetChanged();
+            saveItemsAndUpdateView(items);
         } catch (Exception e) {
             editText.setError(e.getMessage());
         }
