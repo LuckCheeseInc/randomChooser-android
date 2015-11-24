@@ -5,6 +5,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.List;
@@ -14,10 +16,17 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
     private LayoutInflater inflater;
     private NewItemListener listener;
 
+    private int editingItemPos = -1;
+
     public ItemsListAdapter(Context context, List<Item> objects, NewItemListener listener) {
         super(context, R.layout.item_random_chooser, objects);
         this.listener = listener;
         inflater = LayoutInflater.from(context);
+    }
+
+    public void setEditingItemPos(int position) {
+        this.editingItemPos = position;
+        this.notifyDataSetChanged();
     }
 
     @Override
@@ -42,7 +51,7 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
 
     @Override
     public int getItemViewType(int position) {
-        if (position == getCount() - 1) {
+        if (position == getCount() - 1 || position == editingItemPos) {
             return 1;
         }
         else {
@@ -54,7 +63,11 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
     public View getView(int position, View convertView, ViewGroup parent) {
         switch (getItemViewType(position)) {
             case 1:
-                return getNewItemView(convertView, parent);
+                Item editingItem = null;
+                if (position == editingItemPos) {
+                    editingItem = getItem(position);
+                }
+                return getNewItemView(convertView, parent, editingItem);
 
             default:
                 return getItemView(position, convertView, parent);
@@ -72,11 +85,19 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
         return convertView;
     }
 
-    private View getNewItemView(View convertView, ViewGroup parent) {
-        if (convertView == null) {
+    private View getNewItemView(View convertView, ViewGroup parent, Item editingItem) {
+        NewItemViewHolder viewHolder;
+        if (convertView == null || editingItem == null) {
             convertView = inflater.inflate(R.layout.new_item_random_chooser, parent, false);
-            convertView.findViewById(R.id.submit).setOnClickListener(this);
+            viewHolder = new NewItemViewHolder(convertView);
+            viewHolder.setButtonsOnClickListener(this);
         }
+        else {
+            viewHolder = (NewItemViewHolder) convertView.getTag();
+        }
+
+        viewHolder.setEditingItem(editingItem);
+
         return convertView;
     }
 
@@ -85,8 +106,20 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
+
+            case R.id.cancel:
+                editingItemPos = -1;
+                notifyDataSetChanged();
+                break;
+
             case R.id.submit:
-                listener.onNewItemRequestedToBeCreated((View) view.getParent());
+                NewItemViewHolder parentView = (NewItemViewHolder) ((View) view.getParent()).getTag();
+                boolean success = listener.onNewItemRequestedToBeCreated(parentView, (Item) view.getTag());
+
+                if (success) {
+                    parentView.editText.setText("");
+                    editingItemPos = -1;
+                }
                 break;
         }
     }
@@ -94,6 +127,37 @@ public class ItemsListAdapter extends ArrayAdapter<Item> implements View.OnClick
     // ----- Related classes --------------------------------------------------
 
     public interface NewItemListener {
-        void onNewItemRequestedToBeCreated(View newItemView);
+        boolean onNewItemRequestedToBeCreated(NewItemViewHolder newItemView, Item editingItem);
+    }
+
+    public static class NewItemViewHolder {
+        public Button submitBtn;
+        public Button cancelBtn;
+        public EditText editText;
+
+        public NewItemViewHolder(View newItemView) {
+            submitBtn = (Button) newItemView.findViewById(R.id.submit);
+            cancelBtn = (Button) newItemView.findViewById(R.id.cancel);
+            editText = (EditText) newItemView.findViewById(R.id.newItemText);
+
+            newItemView.setTag(this);
+        }
+
+        public void setEditingItem(Item item) {
+            submitBtn.setTag(item);
+
+            if (item != null) {
+                editText.setText(item.toListPrintable());
+                cancelBtn.setVisibility(View.VISIBLE);
+            }
+            else {
+                cancelBtn.setVisibility(View.GONE);
+            }
+        }
+
+        public void setButtonsOnClickListener(View.OnClickListener listener) {
+            submitBtn.setOnClickListener(listener);
+            cancelBtn.setOnClickListener(listener);
+        }
     }
 }

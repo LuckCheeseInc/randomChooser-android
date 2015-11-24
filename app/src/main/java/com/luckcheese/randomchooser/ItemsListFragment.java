@@ -1,6 +1,5 @@
 package com.luckcheese.randomchooser;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -51,6 +50,10 @@ public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewI
 
         switch (item.getItemId()) {
 
+            case R.id.edit:
+                itemsListAdapter.setEditingItemPos(position);
+                return true;
+
             case R.id.delete:
                 deleteItem(position);
                 return true;
@@ -81,15 +84,23 @@ public class ItemsListFragment extends Fragment implements ItemsListAdapter.NewI
     // ----- ItemsListAdapter.NewItemListener ---------------------------------
 
     @Override
-    public void onNewItemRequestedToBeCreated(View newItemView) {
+    public boolean onNewItemRequestedToBeCreated(ItemsListAdapter.NewItemViewHolder newItemView, Item editingItem) {
         Item.ItemsCollection items = getItems();
 
-        EditText editText = (EditText) newItemView.findViewById(R.id.newItemText);
+        String newText = newItemView.editText.getText().toString();
         try {
-            items.add(editText.getText().toString());
-            saveItemsAndUpdateView(items);
+            if (editingItem != null) {
+                items.editItem(editingItem, newText);
+                saveItemsAndUpdateView(items);
+            }
+            else {
+                items.add(newText);
+                saveItemsAndUpdateView(items);
+            }
+            return true;
         } catch (Exception e) {
-            editText.setError(e.getMessage());
+            newItemView.editText.setError(e.getMessage());
+            return false;
         }
     }
 }

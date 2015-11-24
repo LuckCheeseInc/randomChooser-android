@@ -45,6 +45,16 @@ public class Item implements Serializable {
         }
 
         public void add(String text) throws NullPointerException, CloneNotSupportedException {
+            validateText(text);
+            add(new Item(text));
+        }
+
+        public void editItem(Item item, String newText) throws NullPointerException, CloneNotSupportedException {
+            validateText(newText);
+            item.text = newText;
+        }
+
+        public void validateText(String text) throws NullPointerException, CloneNotSupportedException {
             if (text == null || text.length() == 0) {
                 throw new NullPointerException("Text can't be null");
             }
@@ -53,8 +63,6 @@ public class Item implements Serializable {
                     throw new CloneNotSupportedException("Item already exist");
                 }
             }
-
-            add(new Item(text));
         }
     }
 }
