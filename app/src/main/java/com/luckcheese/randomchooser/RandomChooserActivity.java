@@ -1,6 +1,5 @@
 package com.luckcheese.randomchooser;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 
 public class RandomChooserActivity extends BaseActivity {
